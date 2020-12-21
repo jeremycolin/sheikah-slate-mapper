@@ -1,11 +1,9 @@
-import 'package:flutter/material.dart';
-
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
 
 class CompassPainter extends CustomPainter {
   final double heading;
-  final double cameraHeading;
-  CompassPainter(this.heading, this.cameraHeading);
+  CompassPainter(this.heading);
 
   double get rotation => -2 * math.pi * (heading / 360);
 

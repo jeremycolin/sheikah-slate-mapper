@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'pins-list.dart';
+import './pin/pin-database.dart';
+import './pin/pin-model.dart';
+import './pins-list.dart';
 
 class HomeView extends StatelessWidget {
   @override
@@ -11,7 +13,15 @@ class HomeView extends StatelessWidget {
         // the App.build method, and use it to set our appbar title.
         title: Text('Your pins'),
       ),
-      body: pinListView,
+      body: FutureBuilder<List<Pin>>(
+          future: getPins(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return pinListView(snapshot.data);
+            } else {
+              return Center(child: CircularProgressIndicator());
+            }
+          }),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/add-pin/compass');

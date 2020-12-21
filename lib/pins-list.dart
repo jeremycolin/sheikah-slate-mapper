@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-
-import 'pin.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 
-final List<Pin> pins = [
-  Pin(46.81111272089395, 1.6863424794561743, Colors.purple, "Chateauroux"),
-  Pin(48.86012935259547, 2.3415595797790036, Colors.blueAccent, "Paris"),
-  Pin(45.75341428029482, 4.842855723029029, Colors.green, "Lyon")
-];
+import './pin/pin-model.dart';
 
-final pinListView = ListView.builder(
+Widget pinListView(List<Pin> pins) => ListView.builder(
     itemCount: pins.length,
     itemBuilder: (BuildContext context, int index) {
       final pin = pins[index];
@@ -22,7 +16,7 @@ final pinListView = ListView.builder(
             height: 50,
             color: pin.color,
             child: Center(
-                child: Text('${pin.name} (${pin.latitude.toStringAsFixed(4)},'
+                child: Text('${pin.description} (${pin.latitude.toStringAsFixed(4)},'
                     ' ${pin.longitude.toStringAsFixed(4)})')),
           ));
     });
