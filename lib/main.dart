@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'camera.dart';
+import 'compass.dart';
 import 'home.dart';
 import 'style/color.dart';
 
@@ -17,7 +17,7 @@ class App extends StatelessWidget {
       ),
       home: HomeView(),
       routes: {
-        '/add-pin': (context) => CameraView(),
+        '/add-pin': (context) => CompassView(),
       },
     );
   }

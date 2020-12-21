@@ -43,5 +43,9 @@
 	<false/>
 	<key>NSCameraUsageDescription</key>
     <string>Insert here explanation on why the camera access is needed.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>To get location and direction</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>To get location and direction</string>
 </dict>
 </plist>
