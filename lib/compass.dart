@@ -10,81 +10,39 @@ class CompassView extends StatefulWidget {
 }
 
 class _CompassViewState extends State<CompassView> {
-  bool _hasPermissions = false;
-  CompassEvent _lastRead;
-  DateTime _lastReadAt;
+  Future<bool> _isPermissionGrantedFuture;
 
   @override
   void initState() {
     super.initState();
-    _getPermissions();
+    _isPermissionGrantedFuture = _isPermissionGranted();
+    _isPermissionGrantedFuture.then((isPermissionGranted) {
+      if (!mounted || !isPermissionGranted) {
+        return;
+      }
+      setState(() {});
+    });
   }
 
-  void _getPermissions() async {
+  Future<bool> _isPermissionGranted() async {
     if (!await Permission.locationWhenInUse.isGranted) {
-      await Permission.locationWhenInUse.request();
+      return await Permission.locationWhenInUse.request().isGranted;
     }
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text('Flutter Compass'),
-        ),
-        body: Builder(builder: (context) {
-          if (_hasPermissions) {
-            return Column(
-              children: <Widget>[
-                _buildManualReader(),
-                Expanded(child: _buildCompass()),
-              ],
-            );
-          } else {
-            return _buildPermissionSheet();
-          }
-        }),
-      ),
-    );
-  }
-
-  Widget _buildManualReader() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: <Widget>[
-          RaisedButton(
-            child: Text('Read Value'),
-            onPressed: () async {
-              final CompassEvent tmp = await FlutterCompass.events.first;
-              setState(() {
-                _lastRead = tmp;
-                _lastReadAt = DateTime.now();
-              });
-            },
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    '$_lastRead',
-                    style: Theme.of(context).textTheme.caption,
-                  ),
-                  Text(
-                    '$_lastReadAt',
-                    style: Theme.of(context).textTheme.caption,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return FutureBuilder<bool>(
+      future: _isPermissionGrantedFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data) {
+          // TODO maybe render permission request button
+          return Center(child: CircularProgressIndicator());
+        } else {
+          return Scaffold(backgroundColor: Colors.black, body: _buildCompass());
+        }
+      },
     );
   }
 
@@ -92,71 +50,69 @@ class _CompassViewState extends State<CompassView> {
     return StreamBuilder<CompassEvent>(
       stream: FlutterCompass.events,
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text('Error reading heading: ${snapshot.error}');
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (!snapshot.hasData) {
           return Center(
             child: CircularProgressIndicator(),
           );
         }
 
-        double direction = snapshot.data.heading;
+        double _heading = snapshot.data.heading;
+        double _cameraHeading = snapshot.data.headingForCameraMode;
 
         // if direction is null, then device does not support this sensor
-        // show error message
-        if (direction == null)
+        if (_heading == null) {
           return Center(
-            child: Text("Device does not have sensors !"),
+            child: Text("Unable to read from Device sensors"),
           );
+        }
 
-        return Material(
-          shape: CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          elevation: 4.0,
-          child: Container(
-            padding: EdgeInsets.all(16.0),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-            ),
-            child: Transform.rotate(
-              angle: ((direction ?? 0) * (math.pi / 180) * -1),
-              child: Image.asset('assets/compass.jpg'),
-            ),
-          ),
-        );
+        //  Text('Point to your desired pin location with your phone horizontally flat',
+        // style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w400)),
+
+        return CustomPaint(
+            foregroundPainter: CompassPainter(_heading, _cameraHeading),
+            child: Center(
+              child: Text('${_heading.toStringAsFixed(1)}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w400,
+                  )),
+            ));
       },
     );
   }
+}
 
-  Widget _buildPermissionSheet() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text('Location Permission Required'),
-          RaisedButton(
-            child: Text('Request Permissions'),
-            onPressed: () {
-              // PermissionHandler().requestPermissions(
-              //     [PermissionGroup.locationWhenInUse]).then((ignored) {
-              //   _fetchPermissionStatus();
-              // });
-            },
-          ),
-          SizedBox(height: 16),
-          RaisedButton(
-            child: Text('Open App Settings'),
-            onPressed: () {
-              // PermissionHandler().openAppSettings().then((opened) {
-              //   //
-              // });
-            },
-          )
-        ],
-      ),
-    );
+class CompassPainter extends CustomPainter {
+  final double heading;
+  final double cameraHeading;
+  CompassPainter(this.heading, this.cameraHeading);
+
+  double get rotation => -2 * math.pi * (heading / 360);
+
+  Paint get _brush => new Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 8;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint circle = _brush..color = Colors.indigo[400].withOpacity(0.6);
+
+    Paint needle = _brush..color = Colors.red[400];
+
+    double radius = math.min(size.width / 2.2, size.height / 2.2);
+    Offset center = Offset(size.width / 2, size.height / 2);
+    Offset start = Offset.lerp(Offset(center.dx, radius), center, .5);
+    Offset end = Offset.lerp(Offset(center.dx, radius), center, 0.1);
+
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    canvas.translate(-center.dx, -center.dy);
+    canvas.drawLine(start, end, needle);
+    canvas.drawCircle(center, radius, circle);
   }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
