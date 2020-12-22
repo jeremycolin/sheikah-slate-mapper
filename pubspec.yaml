@@ -31,6 +31,7 @@ dependencies:
   camera:
   flutter_compass:
   permission_handler:
+  maps_launcher:
 
 dev_dependencies:
   flutter_test:
