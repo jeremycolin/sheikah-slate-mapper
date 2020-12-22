@@ -17,7 +17,7 @@ final pinListView = ListView.builder(
       return InkWell(
           onTap: () {
             MapsLauncher.launchCoordinates(pin.latitude, pin.longitude);
-          }, // Handle your callback
+          },
           child: Container(
             height: 50,
             color: pin.color,
