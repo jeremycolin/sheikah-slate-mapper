@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'pin.dart';
+import 'package:maps_launcher/maps_launcher.dart';
 
 final List<Pin> pins = [
   Pin(46.81111272089395, 1.6863424794561743, Colors.purple, "Chateauroux"),
@@ -12,11 +13,16 @@ final pinListView = ListView.builder(
     itemCount: pins.length,
     itemBuilder: (BuildContext context, int index) {
       final pin = pins[index];
-      return Container(
-        height: 50,
-        color: pins[index].color,
-        child: Center(
-            child: Text('${pin.name} (${pin.latitude.toStringAsFixed(4)},'
-                ' ${pin.longitude.toStringAsFixed(4)})')),
-      );
+
+      return InkWell(
+          onTap: () {
+            MapsLauncher.launchCoordinates(pin.latitude, pin.longitude);
+          },
+          child: Container(
+            height: 50,
+            color: pin.color,
+            child: Center(
+                child: Text('${pin.name} (${pin.latitude.toStringAsFixed(4)},'
+                    ' ${pin.longitude.toStringAsFixed(4)})')),
+          ));
     });
