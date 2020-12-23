@@ -14,8 +14,7 @@ class HomeView extends StatelessWidget {
       body: pinListView,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to add pin screen using named route
-          Navigator.pushNamed(context, '/add-pin');
+          Navigator.pushNamed(context, '/add-pin/compass');
         },
         tooltip: 'Add pin',
         child: Icon(Icons.pin_drop),
