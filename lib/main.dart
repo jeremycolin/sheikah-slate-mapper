@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'compass/compass-view.dart';
-import 'camera/camera-view.dart';
-import 'create-pin-view.dart';
-import 'home.dart';
-import 'style/color.dart';
+import './compass/compass-view.dart';
+import './camera/camera-view.dart';
+import './create-pin/create-pin-view.dart';
+import './home.dart';
+import './style/color.dart';
 
 void main() => runApp(App());
 

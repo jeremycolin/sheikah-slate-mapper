@@ -79,7 +79,6 @@ class _CameraPreviewManagerState extends State<CameraPreviewManager> {
                   child: CameraPreview(cameraController),
                 ),
               ));
-          // child: CameraPreview(cameraController));
         }
       },
     );

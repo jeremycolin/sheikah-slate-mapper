@@ -32,6 +32,11 @@ dependencies:
   flutter_compass:
   permission_handler:
   maps_launcher:
+  flutter_colorpicker:
+  sensors:
+  geolocator:
+  sqflite:
+  path:
 
 dev_dependencies:
   flutter_test:

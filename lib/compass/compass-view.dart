@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 
-import 'compass-painter.dart';
 import '../style/global.dart';
+import '../camera/camera-view.dart';
+import './compass-painter.dart';
 
 class CompassView extends StatefulWidget {
   @override
@@ -55,8 +56,10 @@ class _CompassViewState extends State<CompassView> {
                     ),
                     Expanded(child: _buildCompass()),
                     InkWell(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/add-pin/camera');
+                        onTap: () async {
+                          final compassEvent = await FlutterCompass.events.first;
+                          Navigator.pushNamed(context, '/add-pin/camera',
+                              arguments: CameraViewArguments(heading: compassEvent.heading));
                         },
                         child: Container(
                             height: 50,
@@ -82,17 +85,14 @@ class _CompassViewState extends State<CompassView> {
         }
 
         double _heading = snapshot.data.heading;
-        double _cameraHeading = snapshot.data.headingForCameraMode; // might be useful later
-
         // if direction is null, then device does not support this sensor
         if (_heading == null) {
           return Center(
             child: Text("Unable to read from Device sensors"),
           );
         }
-
         return CustomPaint(
-            foregroundPainter: CompassPainter(_heading, _cameraHeading),
+            foregroundPainter: CompassPainter(_heading),
             child: Center(
               child: Text('${_heading.toStringAsFixed(1)}',
                   style: TextStyle(
