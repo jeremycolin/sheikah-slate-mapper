@@ -7,6 +7,7 @@ import '../pin/pin-database.dart';
 import '../pin/pin-model.dart';
 import '../style/color.dart';
 import './color-picker-manager.dart';
+import '../api/elevation.dart';
 
 class CreatePinViewwArguments {
   final double heading;
@@ -60,6 +61,56 @@ class CreatePinFormState extends State<CreatePinForm> {
     setState(() => _position = position);
   }
 
+  Future<Location> calculateBestLocation(
+      {double latitude, double longitude, double heading, double pitch}) async {
+    // final Location departure = Location(latitude: 46.81766222112301, longitude: 1.7055093808747712);
+    final Location departure = Location(latitude: latitude, longitude: longitude);
+    final List<Location> pathLocations = await getElevationsOnPath(departure, heading, 500);
+
+    double errorDiff = 10000;
+    Location bestLocation;
+
+    final departureElevation = pathLocations[0].altitude;
+    pathLocations.sublist(1).forEach((pathLocation) {
+      double elevationDiff = pathLocation.altitude - departureElevation;
+      double distance = getDistance(departure, pathLocation);
+      double elevationDiffTargetEstimate = math.tan(pitch) * distance;
+      double elevationDelta = elevationDiffTargetEstimate - elevationDiff;
+
+      print(distance);
+      print(elevationDiff);
+      print(elevationDiffTargetEstimate);
+      print(elevationDelta);
+      print(elevationDelta.abs());
+
+      if (elevationDelta.abs() < errorDiff) {
+        errorDiff = elevationDelta.abs();
+        bestLocation = pathLocation;
+      }
+    });
+    return bestLocation;
+  }
+
+  void _createPin(CreatePinViewwArguments arguments) async {
+    Location bestLocation = await calculateBestLocation(
+        latitude: _position.latitude,
+        longitude: _position.longitude,
+        heading: arguments.heading,
+        pitch: arguments.pitch);
+
+    if (bestLocation != null) {
+      final Pin pin = Pin(
+          latitude: bestLocation.latitude,
+          longitude: bestLocation.longitude,
+          altitude: bestLocation.altitude,
+          color: _color,
+          description: _description,
+          created: new DateTime.now());
+      insertPin(pin);
+      Navigator.pushNamed(context, '/');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final CreatePinViewwArguments arguments = ModalRoute.of(context).settings.arguments;
@@ -98,16 +149,7 @@ class CreatePinFormState extends State<CreatePinForm> {
               onPressed: () {
                 if (_formKey.currentState.validate()) {
                   _formKey.currentState.save();
-
-                  final Pin pin = Pin(
-                      latitude: _position.latitude,
-                      longitude: _position.longitude,
-                      altitude: _position.altitude,
-                      color: _color,
-                      description: _description,
-                      created: new DateTime.now());
-                  insertPin(pin);
-                  Navigator.pushNamed(context, '/');
+                  _createPin(arguments);
                 }
               },
               color: primaryColor,
