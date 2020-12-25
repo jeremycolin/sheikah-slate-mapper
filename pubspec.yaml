@@ -37,6 +37,7 @@ dependencies:
   geolocator:
   sqflite:
   path:
+  http:
 
 dev_dependencies:
   flutter_test:
