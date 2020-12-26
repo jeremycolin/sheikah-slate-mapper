@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:scidart/numdart.dart';
 
 import '../pin/pin-database.dart';
 import '../pin/pin-model.dart';
@@ -61,48 +62,73 @@ class CreatePinFormState extends State<CreatePinForm> {
     setState(() => _position = position);
   }
 
-  Future<Location> calculateBestLocation(
+  Future<Location> estimatePinLocation(
       {double latitude, double longitude, double heading, double pitch}) async {
+    const double MAX_DISTANCE = 500;
+    const double PHONE_ELEVATION = 1.65;
     // final Location departure = Location(latitude: 46.81766222112301, longitude: 1.7055093808747712);
     final Location departure = Location(latitude: latitude, longitude: longitude);
-    final List<Location> pathLocations = await getElevationsOnPath(departure, heading, 500);
+    final List<Location> pathLocations =
+        await getElevationsOnPath(departure, heading, MAX_DISTANCE);
 
-    double errorDiff = 10000;
-    Location bestLocation;
+    final departureElevation =
+        pathLocations[0].altitude + PHONE_ELEVATION; // compensate for phone in hand elevation
+    final correlations = Array.empty();
+    correlations.add(0);
 
-    final departureElevation = pathLocations[0].altitude;
+    double bestCorrelation = 0;
+    int bestCorrelationIndex = 1;
+    int index = 1;
+
     pathLocations.sublist(1).forEach((pathLocation) {
       double elevationDiff = pathLocation.altitude - departureElevation;
       double distance = getDistance(departure, pathLocation);
       double elevationDiffTargetEstimate = math.tan(pitch) * distance;
       double elevationDelta = elevationDiffTargetEstimate - elevationDiff;
 
-      print(distance);
-      print(elevationDiff);
-      print(elevationDiffTargetEstimate);
-      print(elevationDelta);
-      print(elevationDelta.abs());
+      // the closer, the worst an elevation delta should be represented
+      final correlation = 100 / elevationDelta.abs() * math.sqrt(distance / MAX_DISTANCE);
+      correlations.add(correlation);
 
-      if (elevationDelta.abs() < errorDiff) {
-        errorDiff = elevationDelta.abs();
-        bestLocation = pathLocation;
+      print('distance: $distance');
+      print('elevationDiff: $elevationDiff');
+      print('elevationDiffTargetEstimate: $elevationDiffTargetEstimate');
+      print('correlation: $correlation');
+
+      if (correlation > bestCorrelation) {
+        bestCorrelation = correlation;
+        bestCorrelationIndex = index;
       }
+      index++;
     });
-    return bestLocation;
+
+    final correlated = parabolic(correlations, bestCorrelationIndex);
+    final Location prevLocation = pathLocations[correlated[0].floor()];
+    final Location nextLocation = pathLocations[correlated[0].ceil()];
+
+    final Location correlatedLocation = Location(
+        latitude: (prevLocation.latitude + nextLocation.latitude) / 2,
+        longitude: (prevLocation.longitude + nextLocation.longitude) / 2,
+        altitude: (prevLocation.altitude + nextLocation.altitude) / 2);
+
+    print('bestCorrelation :$bestCorrelation');
+    print('bestCorrelation :$correlated');
+
+    return correlatedLocation;
   }
 
   void _createPin(CreatePinViewwArguments arguments) async {
-    Location bestLocation = await calculateBestLocation(
+    Location pinLocation = await estimatePinLocation(
         latitude: _position.latitude,
         longitude: _position.longitude,
         heading: arguments.heading,
         pitch: arguments.pitch);
 
-    if (bestLocation != null) {
+    if (pinLocation != null) {
       final Pin pin = Pin(
-          latitude: bestLocation.latitude,
-          longitude: bestLocation.longitude,
-          altitude: bestLocation.altitude,
+          latitude: pinLocation.latitude,
+          longitude: pinLocation.longitude,
+          altitude: pinLocation.altitude,
           color: _color,
           description: _description,
           created: new DateTime.now());

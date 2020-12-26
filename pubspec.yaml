@@ -38,6 +38,7 @@ dependencies:
   sqflite:
   path:
   http:
+  scidart:
 
 dev_dependencies:
   flutter_test:

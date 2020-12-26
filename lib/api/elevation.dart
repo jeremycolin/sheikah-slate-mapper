@@ -83,7 +83,7 @@ Future<List<Location>> getElevationsOnPath(
   final response = await http.get(url);
 
   // final mockBody = jsonEncode(mocks);
-  final List<Location> _locations = [];
+  final List<Location> _locations = new List();
   jsonDecode(response.body)['results'].forEach((result) {
     _locations.add(Location.fromJson(result));
   });
