@@ -86,7 +86,7 @@ class CreatePinFormState extends State<CreatePinForm> {
       double elevationDiffTargetEstimate = math.tan(pitch) * distance;
       double elevationDelta = elevationDiffTargetEstimate - elevationDiff;
 
-      // the closer, the worst an elevation delta should be represented
+      // TODO the closer, the worst an elevation delta should be represented (ponderation by distance but not linear)
       final correlation = 100 / elevationDelta.abs() * math.sqrt(distance / MAX_DISTANCE);
       correlations.add(correlation);
 
@@ -103,13 +103,14 @@ class CreatePinFormState extends State<CreatePinForm> {
     });
 
     final correlated = parabolic(correlations, bestCorrelationIndex);
+    final corrCoeff = correlated[0].ceil() - correlated[0];
     final Location prevLocation = pathLocations[correlated[0].floor()];
     final Location nextLocation = pathLocations[correlated[0].ceil()];
 
     final Location correlatedLocation = Location(
-        latitude: (prevLocation.latitude + nextLocation.latitude) / 2,
-        longitude: (prevLocation.longitude + nextLocation.longitude) / 2,
-        altitude: (prevLocation.altitude + nextLocation.altitude) / 2);
+        latitude: prevLocation.latitude * corrCoeff + nextLocation.latitude * (1 - corrCoeff),
+        longitude: prevLocation.longitude * corrCoeff + nextLocation.longitude * (1 - corrCoeff),
+        altitude: prevLocation.altitude * corrCoeff + nextLocation.altitude * (1 - corrCoeff));
 
     print('bestCorrelation :$bestCorrelation');
     print('bestCorrelation :$correlated');
